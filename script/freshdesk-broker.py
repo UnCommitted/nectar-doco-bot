@@ -87,7 +87,9 @@ def parse_args():
     '''
 
     # Top level parser, contains common options
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+	description='Start a Freshdesk bot.',
+	formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     # Configuration file path
     parser.add_argument(
@@ -101,9 +103,8 @@ def parse_args():
         '-c',
         '--confname',
         default='fdbot',
-        help=\
-            'Base name of configuration file. '
-            'Script will look for this + .yaml.asc'
+        help='Base name of configuration file. '
+            'Script will look for CONFIGNAME.yaml.asc under script/configs of REPOPATH' 
     )
 
     # Python 3 virtualenv directory
