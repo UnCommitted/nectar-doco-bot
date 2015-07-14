@@ -48,6 +48,10 @@ from flask import Flask, request, abort
 import threading
 import hmac
 
+class ExpandHomeAction(argparse.Action):
+  def __call__(self, parser, namespace, value, option_string):
+    setattr(namespace, self.dest, os.path.expanduser(value))
+
 class DocumentMapError(Exception):
     '''Custom exception for Document Map issues'''
     pass
@@ -63,7 +67,7 @@ def read_config(repopath, confname):
     # Decrypt config and pass back
     encryptedtext = open(
         "{}/script/configs/{}.yaml.asc".format(
-            os.path.expanduser(repopath),
+            repopath,
             confname
         ),
         'rb'
@@ -82,20 +86,16 @@ def read_config(repopath, confname):
     return config
 
 def parse_args():
-    '''
-    Get the arguments from the command line
-    '''
-
-    # Top level parser, contains common options
     parser = argparse.ArgumentParser(
         description='Start a Freshdesk bot.',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    # Configuration file path
+    # Path of working repository
     parser.add_argument(
         '--repopath',
-        default='~/nectarcloud-tier0doco',
-        help='Path to Tier0 Doco repository clone'
+        default=os.path.expanduser('~/nectarcloud-tier0doco'),
+        help='Path to Tier0 Doco repository clone',
+        action=ExpandHomeAction
     )
 
     # Hubot config file name
@@ -112,7 +112,8 @@ def parse_args():
         '-p3',
         '--python3env',
         default='.',
-        help='Virtual environment containing python3'
+        help='Virtual environment containing python3',
+        action=ExpandHomeAction
     )
 
     # articles path relative to repo base
@@ -123,19 +124,16 @@ def parse_args():
         help='articles path relative to repopath'
     )
 
-    # Actually read in the arguments from the command line
     args = parser.parse_args()
 
-    # Do some argument checking
-
     # Check the repo directory exists
-    if not os.path.isdir(os.path.expanduser(args.repopath)):
+    if not os.path.isdir(args.repopath):
         raise ConfigError(
             '--repopath: Repository {} does not exist'.format(args.repopath)
         )
 
     # Check the python3 virtual environment exists
-    if not os.path.isdir(os.path.expanduser(args.python3env)):
+    if not os.path.isdir(args.python3env):
         raise ConfigError(
             '-p3: Directory {} does not exist'.format(args.python3env)
         )
@@ -147,7 +145,7 @@ def parse_args():
             args.confname
         )
 
-    if not os.path.isfile(os.path.expanduser(configfile)):
+    if not os.path.isfile(configfile):
         raise ConfigError(
             '-c: Configuration file {} does not exist\n'.
             format(configfile)
@@ -1566,11 +1564,10 @@ def process_update(args, config):
 if __name__ == '__main__':
 
     # Get arguments from the command line
-    # TODO: As parse_args throw exceptions, deal it here
     try:
         args = parse_args()
     except Exception as e:
-        print('\nPlease provide correct argument(s):')
+        print('\nPlease provide correct argument:')
         print(e)
         exit(1)
 
@@ -1578,7 +1575,7 @@ if __name__ == '__main__':
     config = read_config(args.repopath, args.confname)
 
     # Change into the repo directory
-    os.chdir(os.path.expanduser(args.repopath))
+    os.chdir(args.repopath)
 
     # Configure the endpoint
     endpoint = configure_flask_server(args, config)
