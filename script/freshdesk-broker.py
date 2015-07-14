@@ -88,8 +88,8 @@ def parse_args():
 
     # Top level parser, contains common options
     parser = argparse.ArgumentParser(
-	description='Start a Freshdesk bot.',
-	formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        description='Start a Freshdesk bot.',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     # Configuration file path
     parser.add_argument(
@@ -104,7 +104,7 @@ def parse_args():
         '--confname',
         default='fdbot',
         help='Base name of configuration file. '
-            'Script will look for CONFIGNAME.yaml.asc under script/configs of REPOPATH' 
+            'Script will look for CONFIGNAME.yaml.asc under script/configs of REPOPATH'
     )
 
     # Python 3 virtualenv directory
@@ -1568,11 +1568,11 @@ if __name__ == '__main__':
     # Get arguments from the command line
     # TODO: As parse_args throw exceptions, deal it here
     try:
-    	args = parse_args()
+        args = parse_args()
     except Exception as e:
-    	print('\nPlease provide correct argument(s):')
-    	print(e)
-    	exit(1)
+        print('\nPlease provide correct argument(s):')
+        print(e)
+        exit(1)
 
     # Decrypt and read configuration
     config = read_config(args.repopath, args.confname)
