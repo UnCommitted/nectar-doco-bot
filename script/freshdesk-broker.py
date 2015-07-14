@@ -63,7 +63,7 @@ def read_config(repopath, confname):
     # Decrypt config and pass back
     encryptedtext = open(
         "{}/script/configs/{}.yaml.asc".format(
-            repopath,
+            os.path.expanduser(repopath),
             confname
         ),
         'rb'
@@ -94,7 +94,7 @@ def parse_args():
     # Configuration file path
     parser.add_argument(
         '--repopath',
-        default='/home/fdbot/nectarcloud-tier0doco',
+        default='~/nectarcloud-tier0doco',
         help='Path to Tier0 Doco repository clone'
     )
 
@@ -111,7 +111,7 @@ def parse_args():
     parser.add_argument(
         '-p3',
         '--python3env',
-        default='/home/fdbot/python3',
+        default='.',
         help='Virtual environment containing python3'
     )
 
@@ -129,15 +129,15 @@ def parse_args():
     # Do some argument checking
 
     # Check the repo directory exists
-    if not os.path.isdir(args.repopath):
+    if not os.path.isdir(os.path.expanduser(args.repopath)):
         raise ConfigError(
-            'Repository {} does not exist\n'.format(args.repopath)
+            '--repopath: Repository {} does not exist'.format(args.repopath)
         )
 
     # Check the python3 virtual environment exists
-    if not os.path.isdir(args.python3env):
+    if not os.path.isdir(os.path.expanduser(args.python3env)):
         raise ConfigError(
-            'Directory {} does not exist\n'.format(args.python3env)
+            '-p3: Directory {} does not exist'.format(args.python3env)
         )
 
     # Check that the configuration file exists
@@ -147,9 +147,9 @@ def parse_args():
             args.confname
         )
 
-    if not os.path.isfile(configfile):
+    if not os.path.isfile(os.path.expanduser(configfile)):
         raise ConfigError(
-            'Configuration file {} does not exist\n'.
+            '-c: Configuration file {} does not exist\n'.
             format(configfile)
         )
 
@@ -510,7 +510,7 @@ class GerritAPI():
         )
         # Fix stupid response header.. grrr
         info = json.loads(re.sub(r'\)]}\'', '', reply.text))
-        
+
         # Save the current revision to allow review and submission
         current_revision = info['current_revision']
 
@@ -1389,7 +1389,7 @@ class FreshDeskDocumentMap(DocumentMap):
                 del(self.articles[aid]['freshdesk'])
             else:
                 self.require_change = True
-                
+
         for aid in self.article_deletions.keys():
             try:
                 fd_folder_id = self.folders[self.articles[aid]['parent']]['freshdesk']['fd_attributes']['folder']['id']
@@ -1566,13 +1566,19 @@ def process_update(args, config):
 if __name__ == '__main__':
 
     # Get arguments from the command line
-    args = parse_args()
+    # TODO: As parse_args throw exceptions, deal it here
+    try:
+    	args = parse_args()
+    except Exception as e:
+    	print('\nPlease provide correct argument(s):')
+    	print(e)
+    	exit(1)
 
     # Decrypt and read configuration
     config = read_config(args.repopath, args.confname)
 
     # Change into the repo directory
-    os.chdir(args.repopath)
+    os.chdir(os.path.expanduser(args.repopath))
 
     # Configure the endpoint
     endpoint = configure_flask_server(args, config)
