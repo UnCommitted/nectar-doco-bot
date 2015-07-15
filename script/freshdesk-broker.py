@@ -1423,6 +1423,13 @@ def configure_flask_server(args, config_dict):
     def receive_push_notification():
         """Receive message from GitHub"""
 
+        if not 'X-Hub-Signature' in request.headers:
+            abort(400)
+
+        data = request.get_json()
+        if data is None or not 'ref' in data:
+            abort(400)
+
         # Generate token digenst for comparison
         temp_digest = 'sha1={}'.format(
             hmac.new(
@@ -1435,7 +1442,7 @@ def configure_flask_server(args, config_dict):
         if request.headers['X-Hub-Signature'] != temp_digest:
             abort(401)
 
-        if request.get_json()['ref'] != 'refs/heads/master':
+        if data['ref'] != 'refs/heads/master':
             abort(406)
 
         # Spawn a thread to process the request, and return OK immediately
