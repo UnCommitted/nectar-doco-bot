@@ -47,6 +47,7 @@ from requests.auth import HTTPDigestAuth
 from flask import Flask, request, abort
 import threading
 import hmac
+import logging
 
 class ExpandHomeAction(argparse.Action):
   def __call__(self, parser, namespace, value, option_string):
@@ -123,6 +124,20 @@ def parse_args():
         default='articles',
         help='articles path relative to repopath'
     )
+
+    parser.add_argument(
+        '-l',
+        '--loglevel',
+        default='INFO',
+        help='Log level'
+    )
+    parser.add_argument(
+        '-n',
+        '--logname',
+        default='%s.log' % os.path.splitext(os.path.basename(__file__))[0],
+        help='Log name'
+    )
+    logging.basicConfig(filename='example.log',level=logging.DEBUG)
 
     args = parser.parse_args()
 
