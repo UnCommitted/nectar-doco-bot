@@ -49,6 +49,10 @@ import threading
 import hmac
 import logging
 
+LOG_NAME = '%s.log' % os.path.splitext(os.path.basename(__file__))[0]
+logging.basicConfig(filename=LOG_NAME, format='%(asctime)s %(levelname)s %(message)s')
+log = logging.getLogger()
+
 class ExpandHomeAction(argparse.Action):
   def __call__(self, parser, namespace, value, option_string):
     setattr(namespace, self.dest, os.path.expanduser(value))
@@ -129,17 +133,12 @@ def parse_args():
         '-l',
         '--loglevel',
         default='INFO',
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
         help='Log level'
     )
-    parser.add_argument(
-        '-n',
-        '--logname',
-        default='%s.log' % os.path.splitext(os.path.basename(__file__))[0],
-        help='Log name'
-    )
-    logging.basicConfig(filename='example.log',level=logging.DEBUG)
 
     args = parser.parse_args()
+    log.setLevel(args.loglevel)
 
     # Check the repo directory exists
     if not os.path.isdir(args.repopath):
@@ -1592,6 +1591,8 @@ if __name__ == '__main__':
         print('\nPlease provide correct argument:')
         print(e)
         exit(1)
+
+    log.info("Starting the Freshdesk bot")
 
     # Decrypt and read configuration
     config = read_config(args.repopath, args.confname)
