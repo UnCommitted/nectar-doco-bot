@@ -1,0 +1,19 @@
+# This is the template for creating real config file of Freshdesk bot
+# Warning: a real file SHOULD BE ENCRYPTED IF IT GOES TO PUBLIC
+
+# There are four sections. Values in capital letters have to be replaced.
+freshdesk_config:
+    api_token: TOKEN_USED_FOR_FRESHDESK
+    api_url: https://NECTAR_FRESHDESK_SOLUTION
+gerrit_config:
+    gerrit_url: https://review.rc.nectar.org.au
+    project_name: NeCTAR-RC/nectarcloud-tier0doco
+    web_username: tier0docobot
+    web_password: PASSWORD_FOR_CONNECTING_GERRIT
+    email_address: devnull@rc.nectar.org.au
+github_config:
+    webhook_auth_token: TOKEN_USED_FOR_GITHUB
+    repo_url: https://github.com/NeCTAR-RC/nectarcloud-tier0doco.git
+flask_config:
+    auth_token: AUTH_TOKEN
+    listen_address: 0.0.0.0
