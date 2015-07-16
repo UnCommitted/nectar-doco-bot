@@ -37,7 +37,7 @@ import yaml
 import gpgme
 import json
 import requests
-from pprint import pprint
+from pprint import pformat
 import shutil
 from html2text import html2text
 from markdown import markdown
@@ -167,7 +167,7 @@ def parse_args():
 
     return args
 
-class FreshDesk():
+class FreshDesk:
     def __init__(self, api_url, api_token):
         '''Get the basic information'''
         self.api_url = api_url
@@ -176,6 +176,15 @@ class FreshDesk():
         self.api_token = api_token
         self.auth = (self.api_token, 'X')
         self.headers = {'Content-type': 'application/json'}
+
+    def log_action(self, source, action, reply):
+        '''Log result of an action done to a source'''
+        if reply.status_code in [200, 201]:
+            log.info('%s on %s was successful' % (action, source))
+        else:
+            log.error('%s on %s failed' % (action, source))
+            log.error('Status code: %s' % reply.status_code)
+            log.error('Headers: %s' % reply.headers)
 
     def get_solution_categories(self):
         '''Get all current categories'''
@@ -216,13 +225,9 @@ class FreshDesk():
             headers=self.headers,
             auth=self.auth
         )
-        if reply.status_code == 201:
-            print('Created category: {}'.format(category['title']))
-            return reply.json()
-        else:
-            print('Tried to create category: {}'.format(category['title']))
-            print('Error: {}'.format(reply.status_code))
-            print('Headers: {}'.format(reply.headers))
+
+        self.log_action('category %s' % category['title'], 'Creation', reply)
+        if reply.status_code == 201: return reply.json()
 
     def update_category(self, category):
         '''Update category in freshdesk'''
@@ -246,13 +251,8 @@ class FreshDesk():
             data=json.dumps(payload)
         )
 
-        if reply.status_code == 200:
-            print('Updated category: {}'.format(category['title']))
-            return reply.json()
-        else:
-            print('Tried to delete category: {}'.format(category['title']))
-            print('Error: {}'.format(reply.status_code))
-            print('Headers: {}'.format(reply.headers))
+        self.log_action('category %s' % category['title'], 'Update', reply)
+        if reply.status_code == 200: return reply.json()
 
     def delete_category(self, category):
         '''Remove category from freshdesk'''
@@ -270,13 +270,7 @@ class FreshDesk():
             auth=self.auth
         )
 
-        if reply.status_code == 200:
-            print('Deleted Category: {}'.format(category['title']))
-        else:
-            print('Tried to delete Category: {}'.format(category['title']))
-            print('Error: {}'.format(reply.status_code))
-            print('Headers: {}'.format(reply.headers))
-
+        self.log_action('category %s' % category['title'], 'Deletion', reply)
 
     def create_folder(self, folder, freshdesk_cid):
         '''Create a new folder in freshdesk'''
@@ -296,13 +290,9 @@ class FreshDesk():
             headers=self.headers,
             auth=self.auth
         )
-        if reply.status_code == 201:
-            print('Created folder: {}'.format(folder['title']))
-            return reply.json()
-        else:
-            print('Tried to create folder: {}'.format(folder['title']))
-            print('Error: {}'.format(reply.status_code))
-            print('Headers: {}'.format(reply.headers))
+
+        self.log_action('folder %s' % folder['title'], 'Creation', reply)
+        if reply.status_code == 201: return reply.json()
 
     def update_folder(self, folder):
         '''Update folder in freshdesk'''
@@ -330,13 +320,8 @@ class FreshDesk():
             data=json.dumps(payload)
         )
 
-        if reply.status_code == 200:
-            print('Updated folder: {}'.format(folder['title']))
-            return reply.json()
-        else:
-            print('Tried to update folder: {}'.format(folder['title']))
-            print('Error: {}'.format(reply.status_code))
-            print('Headers: {}'.format(reply.headers))
+        self.log_action('folder %s' % folder['title'], 'Update', reply)
+        if reply.status_code == 200: return reply.json()
 
     def delete_folder(self, folder):
         '''Remove folder from freshdesk'''
@@ -356,12 +341,7 @@ class FreshDesk():
             auth=self.auth
         )
 
-        if reply.status_code == 200:
-            print('Deleted folder: {}'.format(folder['title']))
-        else:
-            print('Tried to delete folder: {}'.format(folder['title']))
-            print('Error: {}'.format(reply.status_code))
-            print('Headers: {}'.format(reply.headers))
+        self.log_action('folder %s' % folder['title'], 'Deletion', reply)
 
     def create_article(self, article, freshdesk_cid, freshdesk_fid):
         '''Create a new article in freshdesk'''
@@ -390,13 +370,9 @@ class FreshDesk():
             headers=self.headers,
             auth=self.auth
         )
-        if reply.status_code == 201:
-            print('Created article: {}'.format(article['title']))
-            return reply.json()
-        else:
-            print('Tried to create article: {}'.format(article['title']))
-            print('Error: {}'.format(reply.status_code))
-            print('Headers: {}'.format(reply.headers))
+
+        self.log_action('Article %s' % article['title'], 'Creation', reply)
+        if reply.status_code == 201: return reply.json()
 
     def update_article(self, article):
         '''Update article in freshdesk'''
@@ -425,13 +401,8 @@ class FreshDesk():
             data=json.dumps(payload)
         )
 
-        if reply.status_code == 200:
-            print('Updated article: {}'.format(article['title']))
-            return reply.json()
-        else:
-            print('Tried to update article: {}'.format(article['title']))
-            print('Error: {}'.format(reply.status_code))
-            print('Headers: {}'.format(reply.headers))
+        self.log_action('Article %s' % article['title'], 'Update', reply)
+        if reply.status_code == 200: return reply.json()
 
     def delete_article(self, article):
         '''Remove article from freshdesk'''
@@ -445,21 +416,15 @@ class FreshDesk():
             article_id=article['freshdesk']['fd_attributes']['article']['id']
         )
 
-        # Use the delete API
         reply = requests.delete(
             url,
             headers=self.headers,
             auth=self.auth
         )
 
-        if reply.status_code == 200:
-            print('Deleted article: {}'.format(article['title']))
-        else:
-            print('Tried to delete article: {}'.format(article['title']))
-            print('Error: {}'.format(reply.status_code))
-            print('Headers: {}'.format(reply.headers))
+        self.log_action('Article %s' % article['title'], 'Deletion', reply)
 
-class GerritAPI():
+class GerritAPI:
     '''Interacts with the NeCTAR Gerrit'''
 
     def __init__(self, gerrit_url, project_name, username, password):
@@ -477,14 +442,14 @@ class GerritAPI():
         can be used in HTTPS push and verification checks
         '''
         url = "{gerrit_url}/a/changes/".format(gerrit_url=self.gerrit_url)
-        print('URL: {}'.format(url))
+        log.debug('URL: {}'.format(url))
         change_info = {
             "project": self.project_name,
             "subject": change_subject,
             "branch": "master",
             "status": "DRAFT"
         }
-        pprint(change_info)
+        log.debug(pformat(change_info))
         reply = requests.post(
             url,
             auth=self.auth,
@@ -492,15 +457,13 @@ class GerritAPI():
             data=json.dumps(change_info)
         )
         if reply.status_code == 201:
-            print('Status OK\nGot the following {}'.format(
-                reply.text
-            ))
+            log.debug('Status OK\nGot the following {}'.format(reply.text))
             # Fix stupid response error.. grrr
             json_response = json.loads(re.sub(r'\)]}\'', '', reply.text))
-            pprint(json_response)
+            log.debug(pformat(json_response))
             return(json_response['change_id'], json_response['id'])
         else:
-            print('Bad response!! {}'.format(reply.status_code))
+            log.debug('Bad response!! {}'.format(reply.status_code))
             return(None, None)
 
     def self_approve_change(self, long_change_id):
@@ -534,7 +497,7 @@ class GerritAPI():
             revision_id=current_revision
         )
 
-        print('Review Url: {}'.format(review_url))
+        log.debug('Review Url: {}'.format(review_url))
         params = {
             'labels': {
                 'Code-Review': '+2'
@@ -550,7 +513,7 @@ class GerritAPI():
 
         # Fix stupid response header.. grrr
         info = json.loads(re.sub(r'\)]}\'', '', reply.text))
-        pprint(info)
+        log.debug(pformat(info))
 
         # Now we submit
         submit_url = '{gerrit_url}/a/changes/{change_id}/submit'.format(
@@ -569,12 +532,12 @@ class GerritAPI():
             data=json.dumps(params)
         )
 
-        print(reply.status_code)
-        print(reply.headers)
+        log.debug(reply.status_code)
+        log.debug(reply.headers)
 
         # Fix stupid response header.. grrr
         info = json.loads(re.sub(r'\)]}\'', '', reply.text))
-        pprint(info)
+        log.debug(pformat(info))
 
     def verified(self, long_change_id):
         '''Check a change using the API to see if it has been verified'''
@@ -585,7 +548,7 @@ class GerritAPI():
             long_change_id=long_change_id
         )
 
-        print('URL: {}'.format(url))
+        log.debug('URL: {}'.format(url))
         # Send request
         reply = requests.get(
             url,
@@ -593,12 +556,10 @@ class GerritAPI():
         )
 
         if reply.status_code == requests.codes.ok:
-            print('Status OK\nGot the following {}'.format(
-                reply.text
-            ))
+            log.debug('Status OK\nGot the following {}'.format(reply.text))
             # Fix stupid response header.. grrr
             info = json.loads(re.sub(r'\)]}\'', '', reply.text))
-            pprint(info)
+            log.debug(pformat(info))
 
             # Check the Verified label if it exists
             # Need to check each layer as they may not exist.
@@ -619,10 +580,10 @@ class GerritAPI():
                 return(False)
 
         else:
-            print('Bad response!! {}'.format(reply.status_code))
+            log.debug('Bad response!! {}'.format(reply.status_code))
             return(False)
 
-class DocumentMap():
+class DocumentMap:
     '''
     Provides an interface to the current documentation ID map between
     various systems
@@ -1241,7 +1202,7 @@ class DocumentMap():
             if article.get('found'):
                 del(article['found'])
                 if not aid in self.article_creations:
-                    print('Got to here.... 1')
+                    log.debug('Got to here.... 1')
                     # Check for updates to content, title and parent
                     if\
                     article['sha1'] != self.orig_articles[int(aid)]['sha1']\
@@ -1249,11 +1210,11 @@ class DocumentMap():
                     article['title'] != self.orig_articles[int(aid)]['title']\
                     or\
                     article['parent'] != self.orig_articles[int(aid)]['parent']:
-                        print('Got to here.... 2')
+                        log.debug('Got to here.... 2')
                         self.article_updates[aid] = True
                         self.require_change = True
                 else:
-                    print('Got to here.... 3')
+                    log.debug('Got to here.... 3')
             else:
                 self.article_deletions[aid] = True
                 self.require_change = True
@@ -1516,7 +1477,7 @@ def process_update(args, config):
         docmap.save_counters()
 
         # Check if we need to make a new change
-        print('Checking if we need a change: {}'.format(docmap.require_change))
+        log.debug('Checking if we need a change: {}'.format(docmap.require_change))
         if docmap.require_change:
             # Assumes we are in the repo directory
             # Create a branch
@@ -1534,8 +1495,8 @@ def process_update(args, config):
 
             # Get a new change ID through the REST API
             change_id, long_id = gerrit.create_change(change_title)
-            print('Change ID: {}'.format(change_id))
-            print('Long ID: {}'.format(long_id))
+            log.info('Change ID: {}'.format(change_id))
+            log.info('Long ID: {}'.format(long_id))
 
             # Add all changes to be sent
             subprocess.call([
