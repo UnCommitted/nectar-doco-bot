@@ -54,8 +54,9 @@ logging.basicConfig(filename=LOG_NAME, format='%(asctime)s %(levelname)s %(messa
 log = logging.getLogger()
 
 class ExpandHomeAction(argparse.Action):
-  def __call__(self, parser, namespace, value, option_string):
-    setattr(namespace, self.dest, os.path.expanduser(value))
+    '''Expand ~ to user's home path when parsing the path in a command line argument'''
+    def __call__(self, parser, namespace, value, option_string):
+        setattr(namespace, self.dest, os.path.expanduser(value))
 
 class DocumentMapError(Exception):
     '''Custom exception for Document Map issues'''
