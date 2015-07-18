@@ -980,7 +980,7 @@ class DocumentMap:
                                 if article_dict:
                                     # Change the title if there is a discrepancy
                                     if article_dict['title'] != article_info.group('title'):
-                                        article_dictinfo['title'] = article_info.group('title')
+                                        article_dict['title'] = article_info.group('title')
                                         # NOTE = Any consumer should change title to new 'title'
                                         article_dict['action'] = {'action': 'TITLE_CHANGE'}
                                 else:
