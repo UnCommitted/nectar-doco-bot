@@ -7,17 +7,9 @@ import unittest
 from unittest.mock import patch
 
 from docmap.freshdesk import FreshDesk
+from mock import Response
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.DEBUG)
-
-class Response:
-    """A mock requests.response"""
-    def __init__(self, code):
-        self.status_code = code
-    def json(self):
-        return None
-    def headers(self):
-        return {}
 
 class TestFreshDesk(unittest.TestCase):
     def setUp(self):
