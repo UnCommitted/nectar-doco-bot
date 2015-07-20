@@ -10,10 +10,6 @@ from docmap.freshdesk import FreshDeskDocumentMap
 class TestDocMap(unittest.TestCase):
     def setUp(self):
         self.fd = create_autospec(FreshDeskDocumentMap)
-        self.fd.load_articles = Mock()
-        self.fd.load_folders = Mock()
-        self.fd.load_categories = Mock()
-        self.fd.load_counters = Mock()
 
     def test_load(self):
         self.assertIsInstance(self.fd, FreshDeskDocumentMap)
