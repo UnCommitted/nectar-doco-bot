@@ -11,7 +11,7 @@ import os
 import yaml
 import copy
 from hashlib import sha1
-#~ from markdown import markdown
+from markdown import markdown
 
 log = logging.getLogger()
 
