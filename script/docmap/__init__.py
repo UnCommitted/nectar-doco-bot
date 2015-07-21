@@ -143,6 +143,31 @@ class DocumentMap:
         self.load_categories()
         self.load_counters()
 
+    def load_mappings(self):
+        '''Load all mapping.yaml files'''
+        for mapping in ['articles', 'folders', 'categories', 'counters']:
+            with open('%s/%s.yaml' % (self.mapping_dir, mapping), 'r') as f:
+                content = yaml.load(f)
+
+            if content is None:
+                content = {}
+
+            self._save_origin(mapping, content)
+
+    def _save_origin(self, mapping, content):
+        # Create an original version to compare against
+        if mapping == 'articles':
+            self.xarticles = content
+            self.xorig_articles = copy.deepcopy(content)
+        elif mapping == 'folders':
+            self.xfolders = content
+            self.xorig_folders = copy.deepcopy(content)
+        elif mapping == 'categories':
+            self.xcategories = content
+            self.xorig_categories = copy.deepcopy(content)
+        elif mapping == 'counters':
+            self.xcounters = content
+
     def load_articles(self):
         '''Load YAML from articles.yaml'''
         with open('{}/articles.yaml'.format(self.mapping_dir), 'r') as f:
