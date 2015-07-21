@@ -138,10 +138,7 @@ class DocumentMap:
         self.folder_updates = {}
 
         # Parse in the mapping data in.
-        self.load_articles()
-        self.load_folders()
-        self.load_categories()
-        self.load_counters()
+        self.load_mappings()
 
     def load_mappings(self):
         '''Load all mapping.yaml files'''
@@ -157,59 +154,26 @@ class DocumentMap:
     def _save_origin(self, mapping, content):
         # Create an original version to compare against
         if mapping == 'articles':
-            self.xarticles = content
-            self.xorig_articles = copy.deepcopy(content)
+            self.articles = content
+            self.orig_articles = copy.deepcopy(self.articles)
         elif mapping == 'folders':
-            self.xfolders = content
-            self.xorig_folders = copy.deepcopy(content)
+            self.folders = content
+            self.orig_folders = self.folders.copy()
         elif mapping == 'categories':
-            self.xcategories = content
-            self.xorig_categories = copy.deepcopy(content)
+            self.categories = content
+            self.orig_categories = self.categories.copy()
         elif mapping == 'counters':
-            self.xcounters = content
-
-    def load_articles(self):
-        '''Load YAML from articles.yaml'''
-        with open('{}/articles.yaml'.format(self.mapping_dir), 'r') as f:
-            self.articles = yaml.load(f)
-
-        if self.articles == None:
-            self.articles = {}
-
-        # Create an original version to compare against
-        self.orig_articles = copy.deepcopy(self.articles)
+            self.counters = content
 
     def save_articles(self):
         '''Save articles into articles.yaml'''
         with open('{}/articles.yaml'.format(self.mapping_dir), 'w') as f:
             f.write(yaml.dump(self.articles))
 
-    def load_folders(self):
-        '''Load YAML from folders.yaml'''
-        with open('{}/folders.yaml'.format(self.mapping_dir), 'r') as f:
-            self.folders = yaml.load(f)
-
-        if self.folders == None:
-            self.folders = {}
-
-        # Create an original version to compare against
-        self.orig_folders = self.folders.copy()
-
     def save_folders(self):
         '''Save folders into folders.yaml'''
         with open('{}/folders.yaml'.format(self.mapping_dir), 'w') as f:
             f.write(yaml.dump(self.folders))
-
-    def load_categories(self):
-        '''Load YAML from categories.yaml'''
-        with open('{}/categories.yaml'.format(self.mapping_dir), 'r') as f:
-            self.categories = yaml.load(f)
-
-        if self.categories == None:
-            self.categories = {}
-
-        # Create an original version to compare against
-        self.orig_categories = self.categories.copy()
 
     def purge_deleted_records(self):
         '''
@@ -232,11 +196,6 @@ class DocumentMap:
         '''Save categories into categories.yaml'''
         with open('{}/categories.yaml'.format(self.mapping_dir), 'w') as f:
             f.write(yaml.dump(self.categories))
-
-    def load_counters(self):
-        '''Load YAML from counters.yaml'''
-        with open('{}/counters.yaml'.format(self.mapping_dir), 'r') as f:
-            self.counters = yaml.load(f)
 
     def save_counters(self):
         '''Save counters into counters.yaml'''
