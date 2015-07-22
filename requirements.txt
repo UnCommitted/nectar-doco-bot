@@ -1,0 +1,12 @@
+# pip install -r requirements.txt
+
+Flask
+Jinja2
+Markdown
+MarkupSafe
+PyYAML
+Werkzeug
+html2text
+itsdangerous
+pygpgme
+requests
