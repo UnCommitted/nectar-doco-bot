@@ -299,7 +299,9 @@ class FreshDeskDocumentMap(DocumentMap):
             # NEW FD category (i.e. previous push didn't work...)
             if self.categories[cid].get('freshdesk'):
                 self.categories[cid]['freshdesk'] = {
-                    'fd_attributes': self.fdapi.update_category(self.categories[cid])
+                    'fd_attributes': self.fdapi.update_category(
+                        self.categories[cid]
+                    )
                 }
                 if self.categories[cid]['freshdesk']['fd_attributes'] == None:
                     # We have an error, delete freshdesk key

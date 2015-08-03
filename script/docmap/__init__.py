@@ -228,12 +228,15 @@ class DocumentMap:
 
                 if current_depth == 1:
                     # Check the DOCID exists
-                    category_info = self.categories.get(int(parsed_name.group('docid')))
+                    category_info = self.categories.get(
+                        int(parsed_name.group('docid'))
+                    )
                     if category_info:
                         # Change the title if there is a discrepancy
                         if category_info['title'] != parsed_name.group('title'):
                             category_info['title'] = parsed_name.group('title')
-                            # NOTE = Any consumer should change title to new 'title'
+                            # NOTE = Any consumer should change title
+                            # to new 'title'
                             category_info['action'] = {'action': 'TITLE_CHANGE'}
                     else:
                         # Unknown DOCID - add it in
@@ -246,12 +249,15 @@ class DocumentMap:
                     # Folder
 
                     # Check the DOCID exists
-                    folder_info = self.folders.get(int(parsed_name.group('docid')))
+                    folder_info = self.folders.get(
+                        int(parsed_name.group('docid'))
+                    )
                     if folder_info:
                         # Change the title if there is a discrepancy
                         if folder_info['title'] != parsed_name.group('title'):
                             folder_info['title'] = parsed_name.group('title')
-                            # NOTE = Any consumer should change title to new 'title'
+                            # NOTE = Any consumer should change title
+                            # to new 'title'
                             folder_info['action'] = {'action': 'TITLE_CHANGE'}
                     else:
                         # Unknown DOCID - add it in
@@ -308,13 +314,14 @@ class DocumentMap:
                                         extension=article_info.group('extension')
                                     )
 
-                                    new_name = '{dir}{sep}{title}--DOCID{docid}{extension}'.format(
-                                        dir=directory,
-                                        sep=os.sep,
-                                        title=article_info.group('title'),
-                                        docid=self.counters['article'],
-                                        extension=article_info.group('extension')
-                                    )
+                                    new_name = '{dir}{sep}{title}--DOCID{docid}{extension}'\
+                                        .format(
+                                            dir=directory,
+                                            sep=os.sep,
+                                            title=article_info.group('title'),
+                                            docid=self.counters['article'],
+                                            extension=article_info.group('extension')
+                                        )
 
                                     # Add information about this article
                                     self.articles[self.counters['article']] = {
@@ -400,7 +407,8 @@ class DocumentMap:
                                     # Change the title if there is a discrepancy
                                     if article_dict['title'] != article_info.group('title'):
                                         article_dict['title'] = article_info.group('title')
-                                        # NOTE = Any consumer should change title to new 'title'
+                                        # NOTE = Any consumer should change title to
+                                        # new 'title'
                                         article_dict['action'] = {'action': 'TITLE_CHANGE'}
                                 else:
                                     # Unknown DOCID - add it in
@@ -566,7 +574,9 @@ class DocumentMap:
                         # we don't handle
                         if article_info:
                             # Add the parent folder...
-                            tmp_article = self.articles[int(article_info.group('docid'))]
+                            tmp_article = self.articles[
+                                int(article_info.group('docid'))
+                            ]
                             tmp_article['parent'] = int(matches.group('docid'))
                             tmp_article['found'] = True
 
