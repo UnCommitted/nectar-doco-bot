@@ -101,7 +101,8 @@ def parse_args():
         '--confname',
         default='fdbot',
         help='Base name of configuration file. '
-            'Script will look for CONFIGNAME.yaml.asc under script/configs of REPOPATH'
+            'Script will look for CONFIGNAME.yaml.asc under script/'
+            'configs of REPOPATH'
     )
 
     # articles path relative to repo base
@@ -231,7 +232,9 @@ def process_update(args, config):
         docmap.save_counters()
 
         # Check if we need to make a new change
-        log.debug('Checking if we need a change: {}'.format(docmap.require_change))
+        log.debug('Checking if we need a change: {}'.format(
+            docmap.require_change
+        ))
         if docmap.require_change:
             # Assumes we are in the repo directory
             # Create a branch
