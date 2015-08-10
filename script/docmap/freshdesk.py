@@ -189,7 +189,7 @@ class FreshDesk:
             'solution_article': {
                 'title': article['title'],
                 'status': 2,
-                'art_type': 2,
+                'art_type': 1,
                 'folder_id': freshdesk_fid,
                 'description': article['html']
             },
