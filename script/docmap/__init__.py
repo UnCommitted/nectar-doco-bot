@@ -12,6 +12,8 @@ import yaml
 import copy
 from hashlib import sha1
 from markdown import markdown
+from . import imagelinkrewrite
+from urllib.parse import quote
 
 log = logging.getLogger()
 
@@ -589,11 +591,21 @@ class DocumentMap:
                                 ),
                                 'r'
                             ) as f:
+                                # Set up our extension
+                                # Need to convert the file system path to an encoded URL
+                                image_url = directory.replace(self.article_dir, 'articles')
+                                image_ext = imagelinkrewrite.ImageLinkRewriteExtension(
+                                    image_file_path=image_url
+                                )
                                 temp=f.read()
-                                tmp_article['sha1'] =\
-                                    sha1(temp.encode('utf-8')).hexdigest()
                                 tmp_article['html'] =\
-                                    markdown(temp, output_format='html5')
+                                    markdown(
+                                        temp,
+                                        extensions=[image_ext],
+                                        output_format='html5'
+                                    )
+                                tmp_article['sha1'] =\
+                                    sha1(tmp_article['html'].encode('utf-8')).hexdigest()
 
         # Find the deleted and updated items
 
