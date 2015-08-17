@@ -13,7 +13,6 @@ import copy
 from hashlib import sha1
 from markdown import markdown
 from . import imagelinkrewrite
-from urllib.parse import quote
 
 log = logging.getLogger()
 

@@ -4,7 +4,6 @@ from markdown.inlinepatterns import ImagePattern, handleAttributes
 from markdown.extensions import Extension
 import markdown
 from markdown import util, odict
-from pprint import pprint
 import re
 try:  # pragma: no cover
     from urllib.parse import urlparse, urlunparse, quote
