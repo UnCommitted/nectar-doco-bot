@@ -12,6 +12,7 @@ import yaml
 import copy
 from hashlib import sha1
 from markdown import markdown
+from markdown.extensions import tables
 from . import imagelinkrewrite
 
 log = logging.getLogger()
@@ -596,11 +597,12 @@ class DocumentMap:
                                 image_ext = imagelinkrewrite.ImageLinkRewriteExtension(
                                     image_file_path=image_url
                                 )
+                                table_ext = tables.TableExtension()
                                 temp=f.read()
                                 tmp_article['html'] =\
                                     markdown(
                                         temp,
-                                        extensions=[image_ext],
+                                        extensions=[image_ext, table_ext],
                                         output_format='html5'
                                     )
                                 tmp_article['sha1'] =\
