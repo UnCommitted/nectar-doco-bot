@@ -209,24 +209,23 @@ class DocumentMap:
         Updates articles, folders and categories
         '''
 
-        # Find all characters that are not the os dir separator
-        base_depth = self.article_dir.count(os.sep)
+        # Change into the articles directory - makes relative link paths easier
+        os.chdir(self.article_dir)
 
         # Loop through articles directory to find categories, folders and
         # articles.
-        for cat in os.walk(self.article_dir, topdown=False):
-            cat_string = str(cat[0])
+        for dirpath, dirnames, filenames in os.walk('.', topdown=False):
 
             # Don't worry about the top level directory
-            if cat_string == self.article_dir:
+            if dirpath == '.':
                 continue
 
             # Check if the category already has an ID
-            current_depth = cat_string.count(os.sep) - base_depth
-            matches = self.docid_check.search(cat_string)
+            current_depth = dirpath.count(os.sep)
+            matches = self.docid_check.search(dirpath)
             if matches:
                 # We have an ID, parse out title and ID
-                parsed_name = self.docid_re.search(cat_string)
+                parsed_name = self.docid_re.search(dirpath)
 
                 if current_depth == 1:
                     # Check the DOCID exists
@@ -269,71 +268,67 @@ class DocumentMap:
                         }
 
                     # Now, get the files in this folder, and check their names
-                    for listing in os.walk(cat_string, topdown=False):
-                        directory = cat_string
-                        articles = listing[2]
+                    for article in filenames:
+                        got_id = self.docid_check.search(article)
+                        if got_id:
+                            # We have an ID, parse out title and ID
 
-                        for article in articles:
-                            got_id = self.docid_check.search(article)
-                            if got_id:
-                                # We have an ID, parse out title and ID
+                            article_info = self.docid_re.search(article)
 
-                                article_info = self.docid_re.search(article)
-
-                                # Check the DOCID exists
-                                article_dict = self.articles.get(
-                                    int(article_info.group('docid'))
-                                )
-                                if article_dict:
-                                    # Change the title if there is a discrepancy
-                                    if article_dict['title'] != article_info.group('title'):
-                                        article_dict['title'] = article_info.group('title')
-                                        # NOTE = Any consumer should change title to new 'title'
-                                        article_dict['action'] = {'action': 'TITLE_CHANGE'}
-                                else:
-                                    # Unknown DOCID - add it in
-                                    self.articles[int(parsed_name.group('docid'))] = {
-                                        'title': article_info.group('title'),
-                                        'action': {'action': 'TITLE_CHANGE'}
-                                    }
-
+                            # Check the DOCID exists
+                            article_dict = self.articles.get(
+                                int(article_info.group('docid'))
+                            )
+                            if article_dict:
+                                # Change the title if there is a discrepancy
+                                if article_dict['title'] != article_info.group('title'):
+                                    article_dict['title'] = article_info.group('title')
+                                    # NOTE = Any consumer should change title to new 'title'
+                                    article_dict['action'] = {'action': 'TITLE_CHANGE'}
                             else:
-                                # No ID, need a new one
-                                # Flag that we need to update
+                                # Unknown DOCID - add it in
+                                self.articles[int(parsed_name.group('docid'))] = {
+                                    'title': article_info.group('title'),
+                                    'action': {'action': 'TITLE_CHANGE'}
+                                }
 
-                                article_info = self.title_re.search(article)
+                        else:
+                            # No ID, need a new one
+                            # Flag that we need to update
 
-                                # Ignore any files that aren'd Markdown
-                                if article_info.group('extension'):
-                                    # Update the latest article ID
-                                    self.counters['article'] += 1
+                            article_info = self.title_re.search(article)
 
-                                    # Flag renaming Category
-                                    old_name = '{dir}{sep}{title}{extension}'.format(
+                            # Ignore any files that aren'd Markdown
+                            if article_info.group('extension'):
+                                # Update the latest article ID
+                                self.counters['article'] += 1
+
+                                # Flag renaming Category
+                                old_name = '{dir}{sep}{title}{extension}'.format(
+                                    dir=directory,
+                                    sep=os.sep,
+                                    title=article_info.group('title'),
+                                    extension=article_info.group('extension')
+                                )
+
+                                new_name = '{dir}{sep}{title}--DOCID{docid}{extension}'\
+                                    .format(
                                         dir=directory,
                                         sep=os.sep,
                                         title=article_info.group('title'),
+                                        docid=self.counters['article'],
                                         extension=article_info.group('extension')
                                     )
 
-                                    new_name = '{dir}{sep}{title}--DOCID{docid}{extension}'\
-                                        .format(
-                                            dir=directory,
-                                            sep=os.sep,
-                                            title=article_info.group('title'),
-                                            docid=self.counters['article'],
-                                            extension=article_info.group('extension')
-                                        )
-
-                                    # Add information about this article
-                                    self.articles[self.counters['article']] = {
-                                        'title': article_info.group('title'),
-                                        'action': {
-                                            'action': 'CREATE',
-                                            'from': old_name,
-                                            'to': new_name
-                                        }
+                                # Add information about this article
+                                self.articles[self.counters['article']] = {
+                                    'title': article_info.group('title'),
+                                    'action': {
+                                        'action': 'CREATE',
+                                        'from': old_name,
+                                        'to': new_name
                                     }
+                                }
 
             else:
                 # No ID, just a title
@@ -343,7 +338,7 @@ class DocumentMap:
                 # 1 = Category
                 # 2 = Folder
 
-                parsed_name = self.title_re.search(cat_string)
+                parsed_name = self.title_re.search(dirpath)
                 if current_depth == 1:
                     # Category
 
@@ -353,7 +348,7 @@ class DocumentMap:
 
                     # Flag renaming Category
                     new_name = '{oldname}--DOCID{docid}'.format(
-                        oldname=cat_string,
+                        oldname=dirpath,
                         docid=self.counters['category']
                     )
 
@@ -362,7 +357,7 @@ class DocumentMap:
                         'title': parsed_name.group('title'),
                         'action': {
                             'action': 'CREATE',
-                            'from': cat_string,
+                            'from': dirpath,
                             'to': new_name
                         }
                     }
@@ -376,7 +371,7 @@ class DocumentMap:
 
                     # Flag renaming Category
                     new_name = '{oldname}--DOCID{docid}'.format(
-                        oldname=cat_string,
+                        oldname=dirname,
                         docid=self.counters['folder']
                     )
 
@@ -385,75 +380,71 @@ class DocumentMap:
                         'title': parsed_name.group('title'),
                         'action': {
                             'action': 'CREATE',
-                            'from': cat_string,
+                            'from': dirname,
                             'to': new_name
                         }
                     }
 
                     # Now, get the files in this folder, and check their names
-                    for listing in os.walk(cat_string, topdown=False):
-                        directory = cat_string
-                        articles = listing[2]
+                    for article in filenames:
+                        got_id = self.docid_check.search(article)
+                        if got_id:
+                            # We have an ID, parse out title and ID
+                            article_info = self.docid_re.search(article)
 
-                        for article in articles:
-                            got_id = self.docid_check.search(article)
-                            if got_id:
-                                # We have an ID, parse out title and ID
-                                article_info = self.docid_re.search(article)
-
-                                # Check the DOCID exists
-                                article_dict = self.articles.get(
-                                    int(article_info.group('docid'))
-                                )
-                                if article_dict:
-                                    # Change the title if there is a discrepancy
-                                    if article_dict['title'] != article_info.group('title'):
-                                        article_dict['title'] = article_info.group('title')
-                                        # NOTE = Any consumer should change title to
-                                        # new 'title'
-                                        article_dict['action'] = {'action': 'TITLE_CHANGE'}
-                                else:
-                                    # Unknown DOCID - add it in
-                                    self.articles[article_info.group('docid')] = {
-                                        'title': article_info.group('title'),
-                                        'action': {'action': 'TITLE_CHANGE'}
-                                    }
+                            # Check the DOCID exists
+                            article_dict = self.articles.get(
+                                int(article_info.group('docid'))
+                            )
+                            if article_dict:
+                                # Change the title if there is a discrepancy
+                                if article_dict['title'] != article_info.group('title'):
+                                    article_dict['title'] = article_info.group('title')
+                                    # NOTE = Any consumer should change title to
+                                    # new 'title'
+                                    article_dict['action'] = {'action': 'TITLE_CHANGE'}
                             else:
-                                # No ID, need a new one
-                                # Flag that we need to update
+                                # Unknown DOCID - add it in
+                                self.articles[article_info.group('docid')] = {
+                                    'title': article_info.group('title'),
+                                    'action': {'action': 'TITLE_CHANGE'}
+                                }
+                        else:
+                            # No ID, need a new one
+                            # Flag that we need to update
 
-                                article_info = self.title_re.search(article)
+                            article_info = self.title_re.search(article)
 
-                                if article_info.group('extension'):
-                                    # Update the latest article ID
-                                    self.counters['article'] += 1
-                                    # Flag renaming Article
-                                    oldname = '{dir}{sep}{title}'.format(
-                                        dir=directory,
-                                        sep=os.sep,
-                                        title=article_info.group('title')
+                            if article_info.group('extension'):
+                                # Update the latest article ID
+                                self.counters['article'] += 1
+                                # Flag renaming Article
+                                oldname = '{dir}{sep}{title}'.format(
+                                    dir=directory,
+                                    sep=os.sep,
+                                    title=article_info.group('title')
+                                )
+
+                                article_name =\
+                                    '{oldname}--DOCID{docid}{extension}'\
+                                    .format(
+                                        oldname=oldname,
+                                        docid=self.counters['article'],
+                                        extension=article_info.group('extension')
                                     )
 
-                                    article_name =\
-                                        '{oldname}--DOCID{docid}{extension}'\
-                                        .format(
-                                            oldname=oldname,
-                                            docid=self.counters['article'],
+                                # Add information about this article
+                                self.articles[self.counters['article']] = {
+                                    'title': article_info.group('title'),
+                                    'action': {
+                                        'action': 'CREATE',
+                                        'from': '{name}{extension}'.format(
+                                            name=oldname,
                                             extension=article_info.group('extension')
-                                        )
-
-                                    # Add information about this article
-                                    self.articles[self.counters['article']] = {
-                                        'title': article_info.group('title'),
-                                        'action': {
-                                            'action': 'CREATE',
-                                            'from': '{name}{extension}'.format(
-                                                name=oldname,
-                                                extension=article_info.group('extension')
-                                            ),
-                                            'to': article_name
-                                        }
+                                        ),
+                                        'to': article_name
                                     }
+                                }
 
                 else:
                     # Too deep, ignore
@@ -540,23 +531,22 @@ class DocumentMap:
             del(self.categories[i]['action'])
 
         # Now that all IDS have been assigned, we can map parent IDS properly
-        for cat in os.walk(self.article_dir, topdown=False):
-            cat_string = str(cat[0])
+        for dirpath, dirnames, filenames in os.walk(self.article_dir, topdown=False):
 
             # Don't worry about the top level directory
-            if cat_string == self.article_dir:
+            if dirpath == '.':
                 continue
 
             # Check if the category already has an ID
-            current_depth = cat_string.count(os.sep) - base_depth
+            current_depth = dirpath.count(os.sep)
             if current_depth == 1:
                 # Categories don't have parents, but we need to record that
                 # we found it for deletions.
-                matches = self.docid_re.search(cat_string)
+                matches = self.docid_re.search(dirpath)
                 self.categories[int(matches.group('docid'))]['found'] = True
             elif current_depth == 2:
                 # Folder
-                matches = self.parentid_re.search(cat_string)
+                matches = self.parentid_re.search(dirpath)
 
                 # Set the folder parent
                 folder_info = self.folders.get(int(matches.group('docid')))
@@ -564,49 +554,45 @@ class DocumentMap:
                 folder_info['found'] = True
 
                 # Now, get the files in this folder, and check their names
-                for listing in os.walk(cat_string, topdown=False):
-                    directory = cat_string
-                    articles = listing[2]
+                for article in filenames:
+                    article_info = self.docid_re.search(article)
 
-                    for article in articles:
-                        article_info = self.docid_re.search(article)
+                    # Only process if it is actually an article
+                    # COULD be a .gitignore file/other file that
+                    # we don't handle
+                    if article_info:
+                        # Add the parent folder...
+                        tmp_article = self.articles[
+                            int(article_info.group('docid'))
+                        ]
+                        tmp_article['parent'] = int(matches.group('docid'))
+                        tmp_article['found'] = True
 
-                        # Only process if it is actually an article
-                        # COULD be a .gitignore file/other file that
-                        # we don't handle
-                        if article_info:
-                            # Add the parent folder...
-                            tmp_article = self.articles[
-                                int(article_info.group('docid'))
-                            ]
-                            tmp_article['parent'] = int(matches.group('docid'))
-                            tmp_article['found'] = True
-
-                            # Add a sha1sum of the file
-                            with open(
-                                '{directory}{sep}{name}'.format(
-                                    directory=cat_string,
-                                    sep=os.sep,
-                                    name=article
-                                ),
-                                'r'
-                            ) as f:
-                                # Set up our extension
-                                # Need to convert the file system path to an encoded URL
-                                image_url = directory.replace(self.article_dir, 'articles')
-                                image_ext = imagelinkrewrite.ImageLinkRewriteExtension(
-                                    image_file_path=image_url
+                        # Add a sha1sum of the file
+                        with open(
+                            '{directory}{sep}{name}'.format(
+                                directory=dirname,
+                                sep=os.sep,
+                                name=article
+                            ),
+                            'r'
+                        ) as f:
+                            # Set up our extension
+                            # Need to convert the file system path to an encoded URL
+                            image_url = dirpath.replace('.', 'articles')
+                            image_ext = imagelinkrewrite.ImageLinkRewriteExtension(
+                                image_file_path=image_url
+                            )
+                            table_ext = tables.TableExtension()
+                            temp=f.read()
+                            tmp_article['html'] =\
+                                markdown(
+                                    temp,
+                                    extensions=[image_ext, table_ext],
+                                    output_format='html5'
                                 )
-                                table_ext = tables.TableExtension()
-                                temp=f.read()
-                                tmp_article['html'] =\
-                                    markdown(
-                                        temp,
-                                        extensions=[image_ext, table_ext],
-                                        output_format='html5'
-                                    )
-                                tmp_article['sha1'] =\
-                                    sha1(tmp_article['html'].encode('utf-8')).hexdigest()
+                            tmp_article['sha1'] =\
+                                sha1(tmp_article['html'].encode('utf-8')).hexdigest()
 
         # Find the deleted and updated items
 
