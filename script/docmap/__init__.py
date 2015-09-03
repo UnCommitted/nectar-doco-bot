@@ -14,6 +14,7 @@ from hashlib import sha1
 from markdown import markdown
 from markdown.extensions import tables
 from . import imagelinkrewrite
+from . import relativelinkrewrite
 
 log = logging.getLogger()
 
@@ -531,6 +532,7 @@ class DocumentMap:
             del(self.categories[i]['action'])
 
         # Now that all IDS have been assigned, we can map parent IDS properly
+        articles_copy = copy.deepcopy(self.articles)
         for dirpath, dirnames, filenames in os.walk(self.article_dir, topdown=False):
 
             # Don't worry about the top level directory
@@ -583,12 +585,19 @@ class DocumentMap:
                             image_ext = imagelinkrewrite.ImageLinkRewriteExtension(
                                 image_file_path=image_url
                             )
+                            links_ext = imagelinkrewrite.ImageLinkRewriteExtension(
+                                article_mapping_dict=articles_copy
+                            )
                             table_ext = tables.TableExtension()
                             temp=f.read()
                             tmp_article['html'] =\
                                 markdown(
                                     temp,
-                                    extensions=[image_ext, table_ext],
+                                    extensions=[
+                                        image_ext,
+                                        links_ext,
+                                        table_ext
+                                    ],
                                     output_format='html5'
                                 )
                             tmp_article['sha1'] =\

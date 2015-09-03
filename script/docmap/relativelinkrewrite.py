@@ -1,4 +1,5 @@
 from markdown.preprocessors import Preprocessor
+import os
 import markdown.inlinepatterns as ilp
 from markdown.inlinepatterns import ImagePattern, handleAttributes
 from markdown.extensions import Extension
@@ -29,10 +30,20 @@ class RewriteLinkPattern(LinkPattern):
         markdown_instance
     ):
         """ Replaces matches with some text. """
-        self.directory_url = directory_url
         self.fd_solutions_base_url = fd_solutions_base_url
         self.article_mapping_dict = article_mapping_dict
-        super(RewriteImagePattern, self).__init__(pattern, markdown_instance)
+        self.docid_re = re.compile(
+            '''
+            # Ignore directory path and filename
+            ^(.*{sep})*.*
+
+            # Parse out the article DOCID
+            --DOCID
+            (?P<docid>\d+)$
+            '''.format(sep=os.sep),
+            re.VERBOSE
+        )
+        super(RewriteLinkPattern, self).__init__(pattern, markdown_instance)
 
     def handleMatch(self, m):
         el = util.etree.Element("img")
@@ -43,19 +54,31 @@ class RewriteLinkPattern(LinkPattern):
                 src = src[1:-1]
             # Now we parse relative directories and make them into
             # full links
-            relative_link_re = re.compile(
-                '''
-                ^images/.*$|
-                ^image/.*$
-                ''',
-                re.VERBOSE
-            )
-            if relative_link_re.match(src):
-                # Test replacement for image files
-                src = '{}/{}?raw=true'.format(
-                    self.directory_url,
-                    src
-                )
+
+            # Look up the DOCID in our dict and formulate the FreshDesk URL
+            docid = self.docid_re.search(src)
+            print('Got the following source: {}'.format(src))
+            if docid:
+                # We have a docid, get the freshdesk info from our data
+                article_info =\
+                self.article_mapping_dict[
+                    int(docid.group('docid'))
+                ].get('freshdesk')
+                if article_info:
+                    # Article already in freshdesk need to alter link
+                    fdid = article_info['fd_attributes']['article']['id']
+                    print('DOC {} has FD ID {}'.format(
+                        int(docid.group('docid')),
+                        fdid
+                    ))
+                    # Set new URL
+                    src = '{solutions_url}{fdid}'.format(
+                        solutions_url=self.fd_solutions_base_url,
+                        fdid=fdid
+                    )
+            else:
+                # Didn't get a docid, ignoring
+                print('Did not get a docid from {}'.format(src))
 
             el.set('src', self.sanitize_url(self.unescape(src)))
         else:
@@ -74,34 +97,72 @@ class RewriteLinkPattern(LinkPattern):
 class RewriteReferencePattern(ReferencePattern):
     """ Rewrite URL's to point to FD solution """
 
-    def __init__(self, directory_url, markdown_instance):
+    def __init__(
+        self,
+        pattern,
+        fd_solutions_base_url,
+        article_mapping_dict ,
+        markdown_instance
+    ):
         """ Replaces matches with some text. """
-        self.directory_url = directory_url
-        super(ReferencePattern, self).__init__(markdown_instance)
-
-    def run(self, lines):
-        relative_link_re = re.compile(
+        self.fd_solutions_base_url = fd_solutions_base_url
+        self.article_mapping_dict = article_mapping_dict
+        self.docid_re = re.compile(
             '''
-            .*--DOCID\d+\.[mM][dD]$     # Parse out Markdown references
-                                        # that have DOCID's
-            ''',
+            # Ignore directory path and filename
+            ^(.*{sep})*.*
+
+            # Parse out the article DOCID
+            --DOCID
+            (?P<docid>\d+)$
+            '''.format(sep=os.sep),
             re.VERBOSE
         )
+        super(RewriteReferencePattern, self).__init__(markdown_instance)
 
-        # Loop through references, munge image links
-        for k in self.markdown.references.keys():
-            if relative_link_re.match(self.markdown.references[k][0]):
-                # Replace with path to file in GitHub
-                self.markdown.references[k] = (
-                    '{}/{}?raw=true'.format(
-                        self.directory_url,
-                        self.markdown.references[k][0]
-                    ),
-                    self.markdown.references[k][1]
+    def handleMatch(self, m):
+        try:
+            id = m.group(9).lower()
+        except IndexError:
+            id = None
+        if not id:
+            # if we got something like "[Google][]" or "[Goggle]"
+            # we'll use "google" as the id
+            id = m.group(2).lower()
+
+        # Clean up linebreaks in id
+        id = self.NEWLINE_CLEANUP_RE.sub(' ', id)
+        if id not in self.markdown.references:  # ignore undefined refs
+            return None
+        href, title = self.markdown.references[id]
+
+        # Look up the DOCID in our dict and formulate the FreshDesk URL
+        docid = self.docid_re.search(href)
+        print('Got the following source: {}'.format(href))
+        if docid:
+            # We have a docid, get the freshdesk info from our data
+            article_info =\
+            self.article_mapping_dict[
+                int(docid.group('docid'))
+            ].get('freshdesk')
+            if article_info:
+                # Article already in freshdesk need to alter link
+                fdid = article_info['fd_attributes']['article']['id']
+                print('DOC {} has FD ID {}'.format(
+                    int(docid.group('docid')),
+                    fdid
+                ))
+                # Set new URL
+                href = '{solutions_url}{fdid}'.format(
+                    solutions_url=self.fd_solutions_base_url,
+                    fdid=fdid
                 )
+        else:
+            # Didn't get a docid, ignoring
+            print('Did not get a docid from {}'.format(href))
 
-        # Doesn't do anything to text
-        return lines
+        text = m.group(2)
+        return self.makeTag(href, title, text)
 
 class ReferenceLinkRewriteExtension(Extension):
     """ Rewrite doc links to use FD solution ids """
@@ -111,7 +172,10 @@ class ReferenceLinkRewriteExtension(Extension):
                 'https://support.nectar.org.au/support/solutions/articles/',
                 'Base URL for the Nectar FD solutions area'
             ],
-            'article_mapping_dict' : [{}, 'Dict containing the article mappings\nShould b e a deep copy...']
+            'article_mapping_dict' : [
+                {},
+                'Dict containing the article mappings\nShould be a deep copy...'
+            ]
         }
         super(ReferenceLinkRewriteExtension, self).__init__(**kwargs)
 
@@ -120,13 +184,16 @@ class ReferenceLinkRewriteExtension(Extension):
 
         fd_solutions_base_url = self.getConfig('fd_solutions_base_url')
         article_mapping_dict = self.getConfig('article_mapping_dict')
-        md.inlinePatterns['internal_doco_link'] = RewriteLinkPattern(
+
+        # Replace the current default patterns with our own
+        # creations
+        md.inlinePatterns['link'] = RewriteLinkPattern(
             IMAGE_LINK_RE,
             fd_solutions_base_url,
             article_mapping_dict,
             md
         )
-        md.inlinePatterns['internal_doco_reference'] = RewriteImagePattern(
+        md.inlinePatterns['reference'] = RewriteReferencePattern(
             IMAGE_LINK_RE,
             fd_solutions_base_url,
             article_mapping_dict,
