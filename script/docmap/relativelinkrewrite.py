@@ -1,7 +1,7 @@
 from markdown.preprocessors import Preprocessor
 import os
 import markdown.inlinepatterns as ilp
-from markdown.inlinepatterns import ImagePattern, handleAttributes
+from markdown.inlinepatterns import ReferencePattern, LinkPattern, handleAttributes
 from markdown.extensions import Extension
 import markdown
 from markdown import util, odict
